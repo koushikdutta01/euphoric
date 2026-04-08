@@ -1,0 +1,7 @@
+# ninja log v5
+0	2142	1775571607146678905	CMakeFiles/euphoric-audio.dir/src/main/cpp/jni.cpp.o	b3a6a114a3d8e53c
+4	5676	1775571610650677875	CMakeFiles/euphoric-audio.dir/src/main/cpp/EuphoricAudioEngine.cpp.o	ab630d3727769401
+5676	5754	1775571610766677841	../../../../build/intermediates/cxx/Debug/564234w3/obj/armeabi-v7a/libeuphoric-audio.so	c2f4715584746f20
+8	1417	1775572516976317883	CMakeFiles/euphoric-audio.dir/src/main/cpp/jni.cpp.o	b3a6a114a3d8e53c
+10	5202	1775572520754315612	CMakeFiles/euphoric-audio.dir/src/main/cpp/EuphoricAudioEngine.cpp.o	ab630d3727769401
+5202	5269	1775572520843315558	../../../../build/intermediates/cxx/Debug/564234w3/obj/armeabi-v7a/libeuphoric-audio.so	c2f4715584746f20

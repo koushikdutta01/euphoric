@@ -1,0 +1,4 @@
+/home/koushik/Android/Sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/.cxx/RelWithDebInfo/1ofs3563/arm64-v8a \
+  euphoric-audio

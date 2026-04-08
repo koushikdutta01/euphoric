@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["EuphoricAudioModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.euphoricaudio.EuphoricAudioModule"]
+  }
+}

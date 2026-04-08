@@ -1,0 +1,4 @@
+# ninja log v5
+0	805	1775581703351072974	CMakeFiles/euphoric-audio.dir/src/main/cpp/jni.cpp.o	5f10d6e9431c21fd
+0	4658	1775581707198072744	CMakeFiles/euphoric-audio.dir/src/main/cpp/EuphoricAudioEngine.cpp.o	46653a4750fbff3f
+4658	4686	1775581707236232928	../../../../build/intermediates/cxx/RelWithDebInfo/1ofs3563/obj/x86/libeuphoric-audio.so	cdbc178cc7e48a89
