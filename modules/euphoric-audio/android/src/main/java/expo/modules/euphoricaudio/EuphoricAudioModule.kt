@@ -9,6 +9,7 @@ import android.content.Context
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -17,6 +18,9 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.graphics.Bitmap
 import android.net.Uri
+import android.content.ServiceConnection
+import android.content.ComponentName
+import android.os.IBinder
 
 class EuphoricAudioModule : Module() {
   private var mediaSession: MediaSession? = null
@@ -27,6 +31,21 @@ class EuphoricAudioModule : Module() {
   private var currentArtist: String = "Bit-Perfect Audio"
   private var currentArtwork: Bitmap? = null
   private var currentDurationMs: Long = 0
+
+  private var audioService: EuphoricAudioService? = null
+  private var isBound = false
+
+  private val connection = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+      val binder = service as EuphoricAudioService.LocalBinder
+      audioService = binder.getService()
+      isBound = true
+    }
+    override fun onServiceDisconnected(name: ComponentName?) {
+      isBound = false
+      audioService = null
+    }
+  }
 
   companion object {
     init {
@@ -61,6 +80,7 @@ class EuphoricAudioModule : Module() {
         override fun onStop() {
           nativeStopAudio()
           updatePlaybackState(false)
+          stopService()
         }
         override fun onSeekTo(pos: Long) {
           nativeSeekTo(pos / 1000.0)
@@ -69,20 +89,26 @@ class EuphoricAudioModule : Module() {
       })
       isActive = true
     }
-    createNotificationChannel()
+    
+    startService()
   }
 
-  private fun createNotificationChannel() {
+  private fun startService() {
+    val intent = Intent(context, EuphoricAudioService::class.java)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-      if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
-        val channel = NotificationChannel(CHANNEL_ID, "Euphoric Audio", NotificationManager.IMPORTANCE_LOW).apply {
-          description = "Playback controls"
-          setShowBadge(false)
-        }
-        notificationManager.createNotificationChannel(channel)
-      }
+      context.startForegroundService(intent)
+    } else {
+      context.startService(intent)
     }
+    context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+  }
+
+  private fun stopService() {
+    if (isBound) {
+      context.unbindService(connection)
+      isBound = false
+    }
+    audioService?.stopForegroundService()
   }
 
   private fun updatePlaybackState(isPlaying: Boolean) {
@@ -145,7 +171,7 @@ class EuphoricAudioModule : Module() {
       val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
       val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-      val notificationBuilder = android.app.Notification.Builder(context, CHANNEL_ID)
+      val notificationBuilder = Notification.Builder(context, CHANNEL_ID)
         .setSmallIcon(android.R.drawable.ic_media_play)
         .setContentTitle(currentTitle)
         .setContentText(currentArtist)
@@ -153,15 +179,20 @@ class EuphoricAudioModule : Module() {
         .setContentIntent(pendingIntent)
         .setOngoing(isPlaying)
         .setOnlyAlertOnce(true)
-        .setVisibility(android.app.Notification.VISIBILITY_PUBLIC)
-        .setStyle(android.app.Notification.MediaStyle()
+        .setVisibility(Notification.VISIBILITY_PUBLIC)
+        .setStyle(Notification.MediaStyle()
           .setMediaSession(mediaSession?.sessionToken)
           .setShowActionsInCompactView(0)
         )
-        .addAction(android.app.Notification.Action.Builder(playPauseIcon, playPauseTitle, null).build())
+        .addAction(Notification.Action.Builder(playPauseIcon, playPauseTitle, null).build())
 
-      val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-      notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+      val notification = notificationBuilder.build()
+      if (isPlaying) {
+        audioService?.startForegroundService(notification)
+      } else {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
+      }
     } catch (e: Exception) {
       android.util.Log.e("EuphoricAudio", "showNotification error: ${e.message}")
     }

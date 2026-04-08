@@ -61,14 +61,16 @@ bool EuphoricAudioEngine::loadAudio(const char* filePath) {
 
     unsigned int channels;
     unsigned int sampleRate;
+    
+    // WAV
     drwav_uint64 totalFrameCount;
-
     float* pWavData = drwav_open_file_and_read_pcm_frames_f32(filePath, &channels, &sampleRate, &totalFrameCount, NULL);
     if (pWavData != NULL) {
         LOGI("WAV decoded: %d channels, %d Hz, %llu frames", channels, sampleRate, totalFrameCount);
         mAudioBuffer.assign(pWavData, pWavData + (totalFrameCount * channels));
         drwav_free(pWavData, NULL);
     } else {
+        // FLAC
         drflac_uint64 flacFrameCount;
         float* pFlacData = drflac_open_file_and_read_pcm_frames_f32(filePath, &channels, &sampleRate, &flacFrameCount, NULL);
         if (pFlacData != NULL) {
@@ -76,6 +78,7 @@ bool EuphoricAudioEngine::loadAudio(const char* filePath) {
             mAudioBuffer.assign(pFlacData, pFlacData + (flacFrameCount * channels));
             drflac_free(pFlacData, NULL);
         } else {
+            // MP3
             drmp3_uint64 mp3FrameCount;
             drmp3_config mp3Config;
             float* pMp3Data = drmp3_open_file_and_read_pcm_frames_f32(filePath, &mp3Config, &mp3FrameCount, NULL);
@@ -125,12 +128,18 @@ bool EuphoricAudioEngine::start() {
         ->setSharingMode(oboe::SharingMode::Exclusive)
         ->setFormat(oboe::AudioFormat::Float)
         ->setChannelCount(mChannelCount)
-        ->setSampleRate(mSampleRate);
+        ->setSampleRate(mSampleRate)
+        ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium); // Enable resampling
 
     oboe::Result result = builder.openStream(mStream);
     if (result != oboe::Result::OK) {
         LOGE("Error opening stream: %s", oboe::convertToText(result));
         return false;
+    }
+
+    // Verify stream parameters
+    if (mStream->getFormat() != oboe::AudioFormat::Float) {
+        LOGE("Stream format is not Float");
     }
 
     result = mStream->requestStart();
@@ -139,17 +148,19 @@ bool EuphoricAudioEngine::start() {
         return false;
     }
 
-    LOGI("Stream started successfully at %d Hz", mSampleRate);
+    LOGI("Stream started successfully at %d Hz (Source: %d Hz)", mStream->getSampleRate(), mSampleRate);
     return true;
 }
 
 void EuphoricAudioEngine::stop() {
+    mIsStopping = true;
     if (mStream) {
-        mStream->stop();
+        mStream->requestStop();
         mStream->close();
         mStream.reset();
         LOGI("Stream stopped and closed");
     }
+    mIsStopping = false;
 }
 
 oboe::DataCallbackResult EuphoricAudioEngine::onAudioReady(
@@ -157,12 +168,13 @@ oboe::DataCallbackResult EuphoricAudioEngine::onAudioReady(
         void *audioData,
         int32_t numFrames) {
 
+    if (mIsStopping) return oboe::DataCallbackResult::Stop;
+
     auto *outputData = static_cast<float *>(audioData);
-    size_t framesToRead = numFrames;
-    size_t samplesToRead = framesToRead * mChannelCount;
+    size_t samplesToRead = static_cast<size_t>(numFrames) * mChannelCount;
     
-    size_t currentIndex = mReadIndex.load();
-    size_t availableSamples = mAudioBuffer.size() - currentIndex;
+    size_t currentIndex = mReadIndex.load(std::memory_order_relaxed);
+    size_t availableSamples = mAudioBuffer.size() > currentIndex ? mAudioBuffer.size() - currentIndex : 0;
     
     if (availableSamples == 0 || !mIsLoaded) {
         std::memset(outputData, 0, samplesToRead * sizeof(float));
@@ -171,13 +183,14 @@ oboe::DataCallbackResult EuphoricAudioEngine::onAudioReady(
 
     size_t actualSamples = std::min(samplesToRead, availableSamples);
     
-    float targetVol = mTargetVolume.load();
-    float currentVol = mCurrentVolume.load();
+    float targetVol = mTargetVolume.load(std::memory_order_relaxed);
+    float currentVol = mCurrentVolume.load(std::memory_order_relaxed);
     
-    for (int i = 0; i < actualSamples; ++i) {
+    // Optimized loop with volume ramping to prevent clicks
+    for (size_t i = 0; i < actualSamples; ++i) {
         if (std::abs(currentVol - targetVol) > kVolumeIncrement) {
-            if (currentVol < targetVol) currentVol += kVolumeIncrement / mChannelCount;
-            else currentVol -= kVolumeIncrement / mChannelCount;
+            if (currentVol < targetVol) currentVol += kVolumeIncrement;
+            else currentVol -= kVolumeIncrement;
         } else {
             currentVol = targetVol;
         }
@@ -185,14 +198,13 @@ oboe::DataCallbackResult EuphoricAudioEngine::onAudioReady(
         outputData[i] = mAudioBuffer[currentIndex + i] * currentVol;
     }
     
-    mCurrentVolume.store(currentVol);
+    mCurrentVolume.store(currentVol, std::memory_order_relaxed);
 
     if (actualSamples < samplesToRead) {
         std::memset(outputData + actualSamples, 0, (samplesToRead - actualSamples) * sizeof(float));
-        // mReadIndex.store(0); // For now, don't loop automatically, let UI handle it
-    } else {
-        mReadIndex.store(currentIndex + actualSamples);
     }
+    
+    mReadIndex.fetch_add(actualSamples, std::memory_order_relaxed);
 
     return oboe::DataCallbackResult::Continue;
 }

@@ -198,8 +198,11 @@ function MainApp() {
         try { base64Art = await EuphoricAudio.getArtwork(finalUri); setArtworkUri(base64Art); } catch (e) {}
         const trackDuration = item.duration || 0;
         try { EuphoricAudio.updateMetadata(trackTitle, trackArtist, base64Art, trackDuration); } catch (e) {}
-        EuphoricAudio.startAudio(); setIsPlaying(true); setShowLibrary(false);
-      } else { Alert.alert("Playback Error", `Engine failed to load audio file: ${ext.toUpperCase()}`); }
+        EuphoricAudio.startAudio(); 
+        setIsPlaying(true); 
+        setShowLibrary(false);
+        } else { 
+ Alert.alert("Playback Error", `Engine failed to load audio file: ${ext.toUpperCase()}`); }
     } catch (e) { Alert.alert("Playback Error", "An unexpected error occurred."); } finally { setIsScanning(false); }
   };
 

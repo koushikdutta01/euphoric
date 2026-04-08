@@ -32,6 +32,7 @@ private:
     std::vector<float> mAudioBuffer;
     std::atomic<size_t> mReadIndex{0};
     std::atomic<bool> mIsLoaded{false};
+    std::atomic<bool> mIsStopping{false};
     
     std::atomic<float> mCurrentVolume{0.0f};
     std::atomic<float> mTargetVolume{1.0f};
