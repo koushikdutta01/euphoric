@@ -8,6 +8,8 @@
 #include "dr_wav.h"
 #define DR_FLAC_IMPLEMENTATION
 #include "dr_flac.h"
+#define DR_MP3_IMPLEMENTATION
+#include "dr_mp3.h"
 
 #define LOG_TAG "EuphoricAudioEngine"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -74,8 +76,19 @@ bool EuphoricAudioEngine::loadAudio(const char* filePath) {
             mAudioBuffer.assign(pFlacData, pFlacData + (flacFrameCount * channels));
             drflac_free(pFlacData, NULL);
         } else {
-            LOGE("Failed to decode audio file");
-            return false;
+            drmp3_uint64 mp3FrameCount;
+            drmp3_config mp3Config;
+            float* pMp3Data = drmp3_open_file_and_read_pcm_frames_f32(filePath, &mp3Config, &mp3FrameCount, NULL);
+            if (pMp3Data != NULL) {
+                channels = mp3Config.channels;
+                sampleRate = mp3Config.sampleRate;
+                LOGI("MP3 decoded: %d channels, %d Hz, %llu frames", channels, sampleRate, mp3FrameCount);
+                mAudioBuffer.assign(pMp3Data, pMp3Data + (mp3FrameCount * channels));
+                drmp3_free(pMp3Data, NULL);
+            } else {
+                LOGE("Failed to decode audio file: %s", filePath);
+                return false;
+            }
         }
     }
 

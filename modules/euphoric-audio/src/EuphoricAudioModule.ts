@@ -11,6 +11,7 @@ declare class EuphoricAudioModule extends NativeModule<EuphoricAudioModuleEvents
   loadAudio(uri: String): boolean;
   seekTo(seconds: number): void;
   getStatus(): { position: number, duration: number, sampleRate: number };
+  getMetadata(uri: string): Promise<{ title: string; artist: string; album: string } | null>;
   getArtwork(uri: string): Promise<string | null>;
 }
 

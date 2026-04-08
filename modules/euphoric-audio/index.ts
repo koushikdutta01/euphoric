@@ -3,7 +3,6 @@ import EuphoricAudioModule from './src/EuphoricAudioModule';
 // Reexport the native module. On web, it will be resolved to EuphoricAudioModule.web.ts
 // and on native platforms to EuphoricAudioModule.ts
 export { default } from './src/EuphoricAudioModule';
-export { default as EuphoricAudioView } from './src/EuphoricAudioView';
 export * from './src/EuphoricAudio.types';
 
 export function startAudio() {
@@ -26,6 +25,14 @@ export function getStatus() {
   return EuphoricAudioModule.getStatus();
 }
 
+export async function getMetadata(uri: string) {
+  return await EuphoricAudioModule.getMetadata(uri);
+}
+
 export async function getArtwork(uri: string) {
   return await EuphoricAudioModule.getArtwork(uri);
+}
+
+export function updateMetadata(title: string, artist: string, artwork: string | null, duration: number) {
+  return EuphoricAudioModule.updateMetadata(title, artist, artwork, duration);
 }

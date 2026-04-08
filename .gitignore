@@ -39,3 +39,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# APKs
+*.apk
+
+# Module build artifacts
+modules/*/android/build/
+modules/*/android/.cxx/
+**/.ninja_deps
+**/.ninja_log

@@ -26,23 +26,33 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_AUDIO",
-        "READ_MEDIA_VIDEO",
-        "READ_MEDIA_IMAGES",
-        "ACCESS_MEDIA_LOCATION"
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "plugins": [
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Euphoric to access your music library.",
-          "savePhotosPermission": "Allow Euphoric to save audio to your library.",
-          "isAccessMediaLocationEnabled": true
+          "photosPermission": "Allow Euphoric to access your audio library."
         }
       ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "987b5b52-d940-4efe-9f23-794ce9d3c6dc"
+      }
+    },
+    "owner": "koushik01"
   }
 }

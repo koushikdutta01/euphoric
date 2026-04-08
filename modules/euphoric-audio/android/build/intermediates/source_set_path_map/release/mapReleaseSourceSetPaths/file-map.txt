@@ -1,7 +1,0 @@
-expo.modules.euphoricaudio.euphoric-audio-pngs-0 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/build/generated/res/pngs/release
-expo.modules.euphoricaudio.euphoric-audio-resValues-1 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/build/generated/res/resValues/release
-expo.modules.euphoricaudio.euphoric-audio-mergeReleaseResources-2 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
-expo.modules.euphoricaudio.euphoric-audio-mergeReleaseResources-3 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
-expo.modules.euphoricaudio.euphoric-audio-release-4 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/build/intermediates/merged_res/release/mergeReleaseResources
-expo.modules.euphoricaudio.euphoric-audio-main-5 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/src/main/res
-expo.modules.euphoricaudio.euphoric-audio-release-6 /home/koushik/Documents/MyLlm/euphoric/modules/euphoric-audio/android/src/release/res
