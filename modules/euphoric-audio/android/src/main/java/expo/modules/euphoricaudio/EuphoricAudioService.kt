@@ -10,12 +10,14 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.media.session.MediaSession
+import android.os.PowerManager
+import android.content.pm.ServiceInfo
 
 class EuphoricAudioService : Service() {
     private val binder = LocalBinder()
     private val CHANNEL_ID = "euphoric_audio_channel"
     private val NOTIFICATION_ID = 42
+    private var wakeLock: PowerManager.WakeLock? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): EuphoricAudioService = this@EuphoricAudioService
@@ -28,10 +30,16 @@ class EuphoricAudioService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        acquireWakeLock()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        releaseWakeLock()
+        super.onDestroy()
     }
 
     private fun createNotificationChannel() {
@@ -49,8 +57,24 @@ class EuphoricAudioService : Service() {
         }
     }
 
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Euphoric:AudioPlayback")
+        wakeLock?.acquire(100 * 60 * 1000L /* 100 minutes max as failsafe */)
+    }
+
+    private fun releaseWakeLock() {
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
+        }
+    }
+
     fun startForegroundService(notification: Notification) {
-        startForeground(NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     fun stopForegroundService() {

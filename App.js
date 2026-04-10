@@ -51,15 +51,51 @@ function MainApp() {
   const [currentQueue, setCurrentQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [currentTrackId, setCurrentTrackId] = useState(null);
+  const [isReady, setIsReady] = useState(false);
   
   const timerRef = useRef(null);
-  const breathingAnim = useRef(new Animated.Value(0.3)).current;
-  const jsProgress = useRef(new Animated.Value(0)).current;
-  const nativeProgress = useRef(new Animated.Value(0)).current;
-  const glowPulse = useRef(new Animated.Value(0.6)).current;
+  const PERSISTENCE_FILE = `${FileSystem.documentDirectory}app_state.json`;
+
+  const saveAppState = async (state) => {
+    try {
+      await FileSystem.writeAsStringAsync(PERSISTENCE_FILE, JSON.stringify(state));
+    } catch (e) {
+      console.error("Failed to save state", e);
+    }
+  };
+
+  const loadAppState = async (availableTracks) => {
+    try {
+      const info = await FileSystem.getInfoAsync(PERSISTENCE_FILE);
+      if (info.exists) {
+        const content = await FileSystem.readAsStringAsync(PERSISTENCE_FILE);
+        const state = JSON.parse(content);
+        if (state.currentQueue && state.currentQueue.length > 0) {
+          // Find the track in availableTracks to ensure it still exists
+          const trackToLoad = state.currentQueue[state.currentIndex];
+          if (trackToLoad) {
+            await loadTrack(trackToLoad, state.currentIndex, state.currentQueue, false);
+            if (state.position > 0) {
+              setTimeout(() => EuphoricAudio.seekTo(state.position), 500);
+              setPosition(state.position);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load state", e);
+    } finally {
+      setIsReady(true);
+    }
+  };
 
   useEffect(() => {
-    autoScanLibrary();
+    const init = async () => {
+      const tracks = await autoScanLibrary();
+      await loadAppState(tracks);
+    };
+    init();
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(breathingAnim, { toValue: 0.4, duration: 5000, useNativeDriver: true }),
@@ -130,12 +166,14 @@ function MainApp() {
   };
 
   const autoScanLibrary = async () => {
-    if (isScanning) return;
+    if (isScanning) return [];
     setIsScanning(true);
+    let allTracks = [];
     try {
       const hasPermission = await requestLibraryPermissions();
-      if (!hasPermission) { setIsScanning(false); return; }
+      if (!hasPermission) { setIsScanning(false); return []; }
       const media = await MediaLibrary.getAssetsAsync({ mediaType: 'audio', first: 1000 });
+      allTracks = media.assets;
       const tempAlbums = {};
       const singles = [];
       for (const asset of media.assets) {
@@ -164,9 +202,10 @@ function MainApp() {
       setLibraryAlbums(finalAlbums);
       setLooseTracks(finalSingles);
     } catch (e) {} finally { setIsScanning(false); }
+    return allTracks;
   };
 
-  const loadTrack = async (item, index, queue) => {
+  const loadTrack = async (item, index, queue, autoplay = true) => {
     try {
       setIsScanning(true);
       let finalUri = item.uri;
@@ -198,13 +237,40 @@ function MainApp() {
         try { base64Art = await EuphoricAudio.getArtwork(finalUri); setArtworkUri(base64Art); } catch (e) {}
         const trackDuration = item.duration || 0;
         try { EuphoricAudio.updateMetadata(trackTitle, trackArtist, base64Art, trackDuration); } catch (e) {}
-        EuphoricAudio.startAudio(); 
-        setIsPlaying(true); 
-        setShowLibrary(false);
+        
+        if (autoplay) {
+          EuphoricAudio.startAudio(); 
+          setIsPlaying(true); 
+          setShowLibrary(false);
+        } else {
+          setIsPlaying(false);
+        }
+
+        saveAppState({
+          currentQueue: queue,
+          currentIndex: index,
+          currentTrackId: item.id,
+          position: 0
+        });
+
         } else { 
  Alert.alert("Playback Error", `Engine failed to load audio file: ${ext.toUpperCase()}`); }
     } catch (e) { Alert.alert("Playback Error", "An unexpected error occurred."); } finally { setIsScanning(false); }
   };
+
+  useEffect(() => {
+    if (isPlaying && currentIndex !== -1) {
+      const saveInterval = setInterval(() => {
+        saveAppState({
+          currentQueue,
+          currentIndex,
+          currentTrackId,
+          position
+        });
+      }, 5000); // Save every 5 seconds during playback
+      return () => clearInterval(saveInterval);
+    }
+  }, [isPlaying, currentIndex, currentQueue, currentTrackId, position]);
 
   const playNext = () => { if (currentQueue.length > 0 && currentIndex < currentQueue.length - 1) loadTrack(currentQueue[currentIndex + 1], currentIndex + 1, currentQueue); };
   const playPrev = () => { if (currentQueue.length > 0 && currentIndex > 0) loadTrack(currentQueue[currentIndex - 1], currentIndex - 1, currentQueue); else { EuphoricAudio.seekTo(0); setPosition(0); } };

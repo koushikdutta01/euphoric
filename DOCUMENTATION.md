@@ -18,6 +18,19 @@ Euphoric is a high-fidelity, bit-perfect audio player built with React Native an
 *   **Dynamic Metadata:** Extracts ID3 tags and embedded album art natively.
 
 ### 3. Responsive & Dynamic UI
+*   **AMOLED Aesthetic:** Deep blacks (#000000) with neon accents and breathing animations.
+*   **Glassmorphism:** Uses `expo-blur` for high-quality translucent overlays.
+*   **Dynamic Theming:** Extracts accent colors from album art in real-time.
+
+## 📈 Development History
+
+Euphoric was developed in a high-intensity **11-hour sprint** on April 8, 2026.
+
+*   **Phase 1 (6 hrs):** Core C++ Audio Engine (Oboe) and React Native scaffolding.
+*   **Phase 2 (1 hr):** Rapid UI iteration (v1.1 - v2.0), cinematic loading, and dynamic theming.
+*   **Phase 3 (4 hrs):** "Bulletproofing" - Foreground Service implementation, resampling logic, and stability fixes for Android 14+.
+
+> **Milestone:** Condensing 3 weeks of senior-level engineering into a single-day sprint.
 *   **Adaptive Theming:** Uses `react-native-image-colors` to extract the dominant "vibrant" color from album art, updating the entire app's accent colors in real-time.
 *   **Safe Area Architecture:** Integrated `react-native-safe-area-context` to ensure the "Bottom Capsule" UI never overlaps with system navigation bars or notches across different Android device configurations.
 *   **Glassmorphism Aesthetic:** Utilizes `expo-blur` for a frosted-glass effect on control panels and library modals.

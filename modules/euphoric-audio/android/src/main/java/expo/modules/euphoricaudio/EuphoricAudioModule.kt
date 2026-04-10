@@ -34,12 +34,18 @@ class EuphoricAudioModule : Module() {
 
   private var audioService: EuphoricAudioService? = null
   private var isBound = false
+  private var lastNotification: Notification? = null
 
   private val connection = object : ServiceConnection {
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
       val binder = service as EuphoricAudioService.LocalBinder
       audioService = binder.getService()
       isBound = true
+      
+      // If we have a pending notification, show it now
+      lastNotification?.let {
+        audioService?.startForegroundService(it)
+      }
     }
     override fun onServiceDisconnected(name: ComponentName?) {
       isBound = false
@@ -187,8 +193,15 @@ class EuphoricAudioModule : Module() {
         .addAction(Notification.Action.Builder(playPauseIcon, playPauseTitle, null).build())
 
       val notification = notificationBuilder.build()
+      lastNotification = notification
+      
       if (isPlaying) {
-        audioService?.startForegroundService(notification)
+        if (isBound && audioService != null) {
+          audioService?.startForegroundService(notification)
+        } else {
+          // If not bound, startService will initiate binding and show it in onServiceConnected
+          startService()
+        }
       } else {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)

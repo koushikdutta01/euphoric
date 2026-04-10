@@ -27,6 +27,8 @@ public:
             void *audioData,
             int32_t numFrames) override;
 
+    void onErrorAfterClose(oboe::AudioStream *audioStream, oboe::Result result) override;
+
 private:
     std::shared_ptr<oboe::AudioStream> mStream;
     std::vector<float> mAudioBuffer;
@@ -36,10 +38,13 @@ private:
     
     std::atomic<float> mCurrentVolume{0.0f};
     std::atomic<float> mTargetVolume{1.0f};
-    static constexpr float kVolumeIncrement = 0.005f; // For smooth fading
+    static constexpr float kVolumeIncrement = 0.002f; // Smoother fading
     
     int32_t mSampleRate = 44100;
-    int32_t mChannelCount = 2;
+    int32_t mChannelCount = 2; // Stream channel count
+    int32_t mSourceChannelCount = 2; // Audio file channel count
+    
+    std::mutex mLock;
 
     void resetStream();
 };
